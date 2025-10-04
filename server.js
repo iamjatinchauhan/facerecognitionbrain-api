@@ -40,11 +40,18 @@ const profileLimiter = rateLimit({
     message: 'Too many requests to profiles from this IP, please try again after 15 minutes.'
 });
 
+// Rate limiter for image endpoint to protect DB
+const imageLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 50, // max 50 requests per window per IP to /image
+    message: 'Too many requests to /image from this IP, please try again after 15 minutes.'
+});
+
 app.get('/', (req,res) => {res.send('it is working!');})
 app.post('/Signin', signinLimiter, signin.handleSignin(db, bcrypt))
 app.post('/register',(req, res) => {register.handleRegister(req, res, db, bcrypt) }) //dependencies injection
 app.get('/profile/:id', profileLimiter, (req,res) => {profile.handleProfileGet(req, res, db)})
-app.put('/image', (req,res) => {image.handleImage(req, res, db)})
+app.put('/image', imageLimiter, (req,res) => {image.handleImage(req, res, db)})
 app.post('/imageurl', (req,res) => {image.handleApiCall(req,res)})
 
 app.listen(process.env.PORT || 3000, () => {   //listens server request localhost:3000
