@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
 const knex = require('knex');
-
+const rateLimit = require('express-rate-limit');
 const register = require('./controllers/register');
 const signin = require('./controllers/signin');
 const profile = require('./controllers/profile');
@@ -22,11 +22,19 @@ const db = knex({
 
 const app = express();
 
+// Apply bodyParser and cors middleware
 app.use(bodyParser.json());
 app.use(cors());
 
+// Rate limiter specifically for sign-in
+const signinLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // max 10 requests per window per IP to /Signin
+    message: 'Too many login attempts from this IP, please try again after 15 minutes.'
+});
+
 app.get('/', (req,res) => {res.send('it is working!');})
-app.post('/Signin', signin.handleSignin(db, bcrypt))
+app.post('/Signin', signinLimiter, signin.handleSignin(db, bcrypt))
 app.post('/register',(req, res) => {register.handleRegister(req, res, db, bcrypt) }) //dependencies injection
 app.get('/profile/:id', (req,res) => {profile.handleProfileGet(req, res, db)})
 app.put('/image', (req,res) => {image.handleImage(req, res, db)})
