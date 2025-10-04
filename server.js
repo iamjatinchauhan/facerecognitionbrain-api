@@ -33,10 +33,17 @@ const signinLimiter = rateLimit({
     message: 'Too many login attempts from this IP, please try again after 15 minutes.'
 });
 
+// Rate limiter for profile access to protect DB
+const profileLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // max 100 requests per window per IP to /profile/:id
+    message: 'Too many requests to profiles from this IP, please try again after 15 minutes.'
+});
+
 app.get('/', (req,res) => {res.send('it is working!');})
 app.post('/Signin', signinLimiter, signin.handleSignin(db, bcrypt))
 app.post('/register',(req, res) => {register.handleRegister(req, res, db, bcrypt) }) //dependencies injection
-app.get('/profile/:id', (req,res) => {profile.handleProfileGet(req, res, db)})
+app.get('/profile/:id', profileLimiter, (req,res) => {profile.handleProfileGet(req, res, db)})
 app.put('/image', (req,res) => {image.handleImage(req, res, db)})
 app.post('/imageurl', (req,res) => {image.handleApiCall(req,res)})
 
